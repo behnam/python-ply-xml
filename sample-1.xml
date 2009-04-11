@@ -1,0 +1,14 @@
+
+<Products>
+	<Product pid="p231">
+		<Name>gizmoPlus</Name>
+		<Price>99.99</Price>
+		<Description>more features</Description>
+		<Store>
+			<Name>wiz</Name>
+			<Phone>555-1234</Phone>
+			<Markup>10</Markup>
+		</Store>
+	</Product>
+</Products>
+
