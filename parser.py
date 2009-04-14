@@ -266,7 +266,7 @@ class ParserError(Exception):
 def p_root_element(p):
     '''
     root : element
-    root : element CDATA
+         | element CDATA
     '''
     parser_trace(p)
 
@@ -275,7 +275,7 @@ def p_root_element(p):
 def p_root_cdata_element(p):
     '''
     root : CDATA element
-    root : CDATA element CDATA
+         | CDATA element CDATA
     '''
     parser_trace(p)
 
@@ -284,7 +284,7 @@ def p_root_cdata_element(p):
 def p_element(p):
     '''
     element : opentag children closetag
-    element : lonetag
+            | lonetag
     '''
     parser_trace(p)
 
@@ -321,7 +321,7 @@ def p_lonetag(p):
 def p_attributes(p):
     '''
     attributes : attribute attributes
-    attributes : nothing
+               | nothing
     '''
     parser_trace(p)
 
@@ -343,7 +343,7 @@ def p_attribute(p):
 def p_attrvalue(p):
     '''
     attrvalue : ATTRVALUE1OPEN ATTRVALUE1STRING ATTRVALUE1CLOSE
-    attrvalue : ATTRVALUE2OPEN ATTRVALUE2STRING ATTRVALUE2CLOSE
+              | ATTRVALUE2OPEN ATTRVALUE2STRING ATTRVALUE2CLOSE
     '''
     parser_trace(p)
 
@@ -354,7 +354,7 @@ def p_attrvalue(p):
 def p_children(p):
     '''
     children : child children
-    children : nothing
+             | nothing
     '''
     parser_trace(p)
 
