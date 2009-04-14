@@ -1,5 +1,5 @@
 
-<Product pid="p231">
+<Product abc="def'ghi" xyz='uvw"str'>
 	<Name>gizmoPlus</Name>
 	<Addr/>
 </Product>

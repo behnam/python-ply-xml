@@ -1,5 +1,6 @@
 
 test:
 	clear
-	python xml_parser.py sample-3.xml
+	./parser.py sample-3.xml
+	./parser.py sample-4.xml
 
