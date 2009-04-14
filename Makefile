@@ -1,7 +1,6 @@
 
 all: ctags test
 test:
-	clear
 	./parser.py samples/sample-1.xml
 	./parser.py samples/sample-2.xml
 	./parser.py samples/sample-3.xml
