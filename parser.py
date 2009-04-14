@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+from UserString import UserString
 
 from ply import lex, yacc
 
@@ -11,21 +12,20 @@ from ply import lex, yacc
 #
 
 DEBUG = {
-    'INPUT': True,
+    'INPUT': False,
     'TOKENS': False,
     'PARSER': False,
-    'OUTPUT': True,
+    'OUTPUT': False,
 }
 
 def _debug_header(part):
     if DEBUG[part]:
-        print
-        print '%s:' % part
         print '--------'
+        print '%s:' % part
 
 def _debug_footer(part):
     if DEBUG[part]:
-        print '--------'
+        pass
 
 def _debug_print_(part, s):
     if DEBUG[part]:
@@ -105,11 +105,7 @@ class XmlLexer:
 
     # INITIAL
 
-    t_ignore  = ' \t'
-
-    def t_CDATA(self, t):
-        '[a-zA-Z\t]+'
-        return t
+    t_ignore  = ''
 
     def t_CLOSETAGOPEN(self, t):
         r'</'
@@ -121,8 +117,12 @@ class XmlLexer:
         t.lexer.push_state('tag')
         return t
 
+    def t_CDATA(self, t):
+        '[^<]+'
+        return t
 
-    # tag
+
+    # tag: name
 
     t_tag_ignore  = ' \t'
 
@@ -141,7 +141,7 @@ class XmlLexer:
         return t
 
 
-    # attr
+    # tag: attr
 
     t_tag_ATTRASSIGN    = r'='
 
@@ -191,7 +191,7 @@ class XmlLexer:
     literals = '$%^'
 
     def t_ANY_newline(self, t):
-        r'\n+'
+        r'\n'
         t.lexer.lineno += len(t.value)
 
 
@@ -208,7 +208,7 @@ class XmlLexer:
         while 1:
             tok = self.lexer.token()
             if not tok: break
-            _debug_print_('TOKENS', '[%12s] %s' % (self.lexer.lexstate, tok))
+            _debug_print_('TOKENS', '[%-12s] %s' % (self.lexer.lexstate, tok))
 
         _debug_footer('TOKENS')
 
@@ -250,7 +250,7 @@ tag_stack = []
 # Customization
 
 def parser_trace(x):
-    _debug_print_('PARSER', '[%16s] %s' % (sys._getframe(1).f_code.co_name, x))
+    _debug_print_('PARSER', '[%-16s] %s' % (sys._getframe(1).f_code.co_name, x))
 
 def yacc_production_str(p):
     #return "YaccProduction(%s, %s)" % (str(p.slice), str(p.stack))
@@ -263,11 +263,23 @@ class ParserError(Exception):
 
 # Grammer
 
-def p_root(p):
-    'root : element'
+def p_root_element(p):
+    '''
+    root : element
+    root : element CDATA
+    '''
     parser_trace(p)
 
     p[0] = p[1]
+
+def p_root_cdata_element(p):
+    '''
+    root : CDATA element
+    root : CDATA element CDATA
+    '''
+    parser_trace(p)
+
+    p[0] = p[2]
 
 def p_element(p):
     '''
@@ -288,7 +300,7 @@ def p_opentag(p):
     parser_trace(p)
 
     tag_stack.append(p[2])
-    p[0] = Element(p[2], p[3])
+    p[0] = DOM.Element(p[2], p[3])
 
 def p_closetag(p):
     'closetag : CLOSETAGOPEN TAGATTRNAME TAGCLOSE'
@@ -302,7 +314,7 @@ def p_lonetag(p):
     'lonetag : OPENTAGOPEN TAGATTRNAME attributes LONETAGCLOSE'
     parser_trace(p)
 
-    p[0] = Element(p[2], p[3])
+    p[0] = DOM.Element(p[2], p[3])
 
 # attr
 
@@ -354,10 +366,17 @@ def p_children(p):
     else:
         p[0] = []
 
-def p_child(p):
+def p_child_element(p):
     'child : element'
     parser_trace(p)
+
     p[0] = p[1]
+
+def p_child_cdata(p):
+    'child : CDATA'
+    parser_trace(p)
+
+    p[0] = DOM.Text(p[1])
 
 # nothing
 
@@ -367,45 +386,49 @@ def p_nothing(p):
 
 # Error rule for syntax errors
 def p_error(p):
-    raise ParserError("Parse error: %s", (p,))
+    raise ParserError("Parse error: %s" % (p,))
     pass
 
 
 # ########
 # DOM
 
-class Element:
-    # Document object model
-    #
-    # Parser returns the root Element of the XML document
+class DOM:
+    class Element:
+        # Document object model
+        #
+        # Parser returns the root element of the XML document
 
-    def __init__(self, name, attributes={}, children=[]):
-        self.name = name
-        self.attributes = attributes
-        self.children = children
+        def __init__(self, name, attributes={}, children=[]):
+            self.name = name
+            self.attributes = attributes
+            self.children = children
 
-    def __str__(self):
-        attributes_str = ''
-        for attr in self.attributes:
-            attributes_str += ' %s="%s"' % (attr, _xml_escape(self.attributes[attr]))
+        def __str__(self):
+            attributes_str = ''
+            for attr in self.attributes:
+                attributes_str += ' %s="%s"' % (attr, _xml_escape(self.attributes[attr]))
 
-        children_str = ''
-        for node in self.children:
-            children_str += '\n    ' + str(node)
-        if children_str: children_str += '\n'
+            children_str = ''
+            for child in self.children:
+                if isinstance(child, self.__class__):
+                    children_str += str(child)
+                else:
+                    children_str += child
 
-        return '<%s%s>%s</%s>'% (self.name, attributes_str, children_str, self.name)
+            return '<%s%s>%s</%s>'% (self.name, attributes_str, children_str, self.name)
 
-    def __repr__(self):
-        return str(self)
+        def __repr__(self):
+            return str(self)
+
+    class Text(UserString):
+        pass
 
 # ########
 # MAIN
 
-def main():
+def parse(data):
 
-    # Read data
-    data = open(sys.argv[1]).read()
     _debug_header('INPUT')
     _debug_print_('INPUT', data)
     _debug_footer('INPUT')
@@ -420,12 +443,46 @@ def main():
     yacc.yacc(method="SLR")
 
     _debug_header('PARSER')
-    result = yacc.parse(data)
+    root = yacc.parse(data)
     _debug_footer('PARSER')
 
     _debug_header('OUTPUT')
-    _debug_print_('OUTPUT', result)
+    _debug_print_('OUTPUT', root)
     _debug_footer('OUTPUT')
+
+    return root
+
+
+def tree(node, level=0, prefix=''):
+    'Returns a tree view of the XML data'
+
+    s_node = prefix + node.name + ':'
+
+    s_children = ''
+
+    children = node.children
+    children.reverse()
+
+    if len(children) == 1 and not 'name' in children[0].__dict__:
+        s_node += ' %s' % node.children[0] + '\n'
+
+    else:
+        first = True
+        for i in xrange(len(children)):
+            if 'name' in node.children[i].__dict__:
+                p = '    '
+                s_children = tree(node.children[i], level+1, prefix+p) + s_children
+
+        s_node += '\n'
+
+    return s_node + s_children
+
+def main():
+
+    data = open(sys.argv[1]).read()
+    root = parse(data)
+    print tree(root)
+
 
 if __name__ == '__main__':
     main()

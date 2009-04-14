@@ -1,5 +1,5 @@
 
-<Product abc="def'ghi" xyz='uvw"str'>
+<Product>
 	<Name>gizmoPlus</Name>
 	<Addr/>
 </Product>
