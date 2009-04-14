@@ -1,1 +1,4 @@
-<Product>
+<Product abc="xyz" def='some "text" & "amp" &amp; "semicolon"'>
+	<Name> </Name>
+	<Date> </Date>
+</Product>
