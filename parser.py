@@ -264,27 +264,24 @@ class ParserError(Exception):
 # Grammer
 
 def p_root_element(p):
-    '''
-    root : element
-         | element CDATA
+    '''root : element
+            | element CDATA
     '''
     parser_trace(p)
 
     p[0] = p[1]
 
 def p_root_cdata_element(p):
-    '''
-    root : CDATA element
-         | CDATA element CDATA
+    '''root : CDATA element
+            | CDATA element CDATA
     '''
     parser_trace(p)
 
     p[0] = p[2]
 
 def p_element(p):
-    '''
-    element : opentag children closetag
-            | lonetag
+    '''element : opentag children closetag
+               | lonetag
     '''
     parser_trace(p)
 
@@ -294,16 +291,17 @@ def p_element(p):
     p[0] = p[1]
 
 # tag
-
 def p_opentag(p):
-    'opentag : OPENTAGOPEN TAGATTRNAME attributes TAGCLOSE'
+    '''opentag : OPENTAGOPEN TAGATTRNAME attributes TAGCLOSE
+    '''
     parser_trace(p)
 
     tag_stack.append(p[2])
     p[0] = DOM.Element(p[2], p[3])
 
 def p_closetag(p):
-    'closetag : CLOSETAGOPEN TAGATTRNAME TAGCLOSE'
+    '''closetag : CLOSETAGOPEN TAGATTRNAME TAGCLOSE
+    '''
     parser_trace(p)
 
     n = tag_stack.pop()
@@ -311,17 +309,16 @@ def p_closetag(p):
         raise ParserError('Close tag name ("%s") does not match the corresponding open tag ("%s").' % (p[2], n))
 
 def p_lonetag(p):
-    'lonetag : OPENTAGOPEN TAGATTRNAME attributes LONETAGCLOSE'
+    '''lonetag : OPENTAGOPEN TAGATTRNAME attributes LONETAGCLOSE
+    '''
     parser_trace(p)
 
     p[0] = DOM.Element(p[2], p[3])
 
 # attr
-
 def p_attributes(p):
-    '''
-    attributes : attribute attributes
-               | nothing
+    '''attributes : attribute attributes
+                  | nothing
     '''
     parser_trace(p)
 
@@ -335,26 +332,24 @@ def p_attributes(p):
         p[0] = {}
 
 def p_attribute(p):
-    'attribute : TAGATTRNAME ATTRASSIGN attrvalue'
+    '''attribute : TAGATTRNAME ATTRASSIGN attrvalue
+    '''
     parser_trace(p)
 
     p[0] = {p[1]: p[3]}
 
 def p_attrvalue(p):
-    '''
-    attrvalue : ATTRVALUE1OPEN ATTRVALUE1STRING ATTRVALUE1CLOSE
-              | ATTRVALUE2OPEN ATTRVALUE2STRING ATTRVALUE2CLOSE
+    '''attrvalue : ATTRVALUE1OPEN ATTRVALUE1STRING ATTRVALUE1CLOSE
+                 | ATTRVALUE2OPEN ATTRVALUE2STRING ATTRVALUE2CLOSE
     '''
     parser_trace(p)
 
     p[0] = _xml_unescape(p[2])
 
 # child
-
 def p_children(p):
-    '''
-    children : child children
-             | nothing
+    '''children : child children
+                | nothing
     '''
     parser_trace(p)
 
@@ -367,21 +362,20 @@ def p_children(p):
         p[0] = []
 
 def p_child_element(p):
-    'child : element'
+    '''child : element'''
     parser_trace(p)
 
     p[0] = p[1]
 
 def p_child_cdata(p):
-    'child : CDATA'
+    '''child : CDATA'''
     parser_trace(p)
 
     p[0] = DOM.Text(p[1])
 
 # nothing
-
 def p_nothing(p):
-    'nothing :'
+    '''nothing :'''
     pass
 
 # Error rule for syntax errors
