@@ -204,113 +204,114 @@ class XmlLexer:
     def test(self, data):
         self.lexer.input(data)
 
+        print
+        print 'TOKEN LIST:'
+        print '--------'
+
         while 1:
             tok = self.lexer.token()
             if not tok: break
-            print self.lexer.lexstate, tok
+            print '[%12s] %s' % (self.lexer.lexstate, tok)
+
+        print '--------'
+        print
 
     # XmlLexer ends
 
 
 class Element:
-    string = None
-    children = []
-    attr = {}
+    # Document object model
+    #
+    # Parser returns the root Element of the XML document
 
+    def __init__ (self, name, attr={}, children=[], string=''):
+        self.name = name
+        self.attr = attr
+        self.children = children
+        self.string = string
+
+# Parser
+
+# INITIAL 'CDATA', 'OPENTAGOPEN', 'CLOSETAGOPEN',
+# tag 'TAGATTRNAME', 'TAGCLOSE', 'LONETAGCLOSE', 'ATTRASSIGN',
+# attrvalue1 'ATTRVALUE1OPEN', 'ATTRVALUE1STRING', 'ATTRVALUE1CLOSE',
+# attrvalue2 'ATTRVALUE2OPEN', 'ATTRVALUE2STRING', 'ATTRVALUE2CLOSE',
+
+
+# ########
+# Grammer
+
+def p_root(p):
+    'root : opentag'
+
+    print 'p_root:', p
+    p[0] = p[1]
+
+
+def p_opentag(p):
+    'opentag : OPENTAGOPEN TAGATTRNAME TAGCLOSE'
+
+    print 'p_opentag:', p
+    p[0] = Element(p[2])
+
+
+# ########
+# General
+
+def p_empty(p):
+    'empty :'
+    pass
+
+# Error rule for syntax errors
+def p_error(p):
+    print "Parse error:", p
+    pass
+
+
+# Disabled
 
 """
-    # INITIAL
-    'CDATA',
+def p_opentag(p):
+    'opentag : OPENTAGOPEN TAGATTRNAME attributes TAGCLOSE'
 
-    'OPENTAGOPEN',
-    'CLOSETAGOPEN',
+    p[0] = Element(p[2])
 
-    # tag
-    'TAGATTRNAME',
+def p_attributes(p):
+    '
+    attributes : attribute attributes
+               | attribute
+               | empty
+    '
 
-    'TAGCLOSE',
-    'LONETAGCLOSE',
+    p[0] = p[1]
 
-    'ATTRASSIGN',
+def p_attribute(p):
+    'attribute : TAGATTRNAME ATTRASSIGN attrvalue'
 
-    # attrvalue1
-    'ATTRVALUE1OPEN',
-    'ATTRVALUE1STRING',
-    'ATTRVALUE1CLOSE',
+    p[0] = {p[1]: p[3]}
 
-    # attrvalue2
-    'ATTRVALUE2OPEN',
-    'ATTRVALUE2STRING',
-    'ATTRVALUE2CLOSE',
-"""
-
-
-"""
 def p_opentag_name_attr(p):
     'opentag_name_attr : OPENTAGOPEN TAGATTRNAME '
 
     p[0] = p[1]
-"""
 
-"""
 def p_attr_string(p):
     'attr_string : '
     pass
 """
 
 
-"""
-def p_expression_plus(p):
-    'root : element'
-
-    p[0] = p[1]
-
-def p_expression_minus(p):
-    'element : expression MINUS term'
-
-    '''expression : expression PLUS term
-                  | expression MINUS term
-       term       : term TIMES factor
-                  | term DIVIDE factor'''
-
-    p[0] = p[1] - p[3]
-
-def p_expression_term(p):
-    'expression : term'
-    p[0] = p[1]
-
-def p_term_times(p):
-    'term : term TIMES factor'
-    p[0] = p[1] * p[3]
-
-def p_term_div(p):
-    'term : term DIVIDE factor'
-    p[0] = p[1] / p[3]
-
-def p_term_factor(p):
-    'term : factor'
-    p[0] = p[1]
-
-def p_factor_num(p):
-    'factor : NUMBER'
-    p[0] = p[1]
-
-def p_factor_expr(p):
-    'factor : LPAREN expression RPAREN'
-    p[0] = p[2]
-
-# Error rule for syntax errors
-def p_error(p):
-    print "Syntax error in input!"
-"""
-
-
+# Main
 def main():
     import sys
 
     # Read data
     data = open(sys.argv[1]).read()
+    print
+    print 'INPUT:'
+    print '--------'
     print data
+    print '--------'
 
     # Tokenizer
     xml_lexer = XmlLexer()
@@ -318,19 +319,23 @@ def main():
 
     xml_lexer.test(data)
 
-    """
     # Parser
     yacc.yacc(method="SLR")
 
-    while 1:
-       try:
-           s = raw_input('calc > ')
-       except EOFError:
-           break
-       if not s: continue
-       result = yacc.parse(s)
-       print result
-    """
+    result = yacc.parse(data)
+    print
+    print 'RESULT:'
+    print '--------'
+    print 'root:', result
+    print '--------'
+
+
+# Customization
+
+def yacc_production_str(p):
+    return "YaccProduction(%s, %s)" % (str(p.slice),str(p.stack))
+
+yacc.YaccProduction.__str__ = yacc_production_str
 
 
 if __name__ == '__main__':
