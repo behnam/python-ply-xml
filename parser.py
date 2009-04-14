@@ -13,7 +13,7 @@ from ply import lex, yacc
 DEBUG = {
     'INPUT': True,
     'TOKENS': False,
-    'PARSER': True,
+    'PARSER': False,
     'OUTPUT': True,
 }
 
@@ -31,18 +31,9 @@ def _debug_print_(part, s):
     if DEBUG[part]:
         print s
 
-# #######
-# Regulare expressions
-#
-
-re_digit       = r'([0-9])'
-re_nondigit    = r'([_A-Za-z])'
-re_identifier  = r'(' + re_nondigit + r'(' + re_digit + r'|' + re_nondigit + r')*)'
-
 
 # ########
-# tokens:
-#
+# TOKENS
 
 tokens = [
 
@@ -70,15 +61,22 @@ tokens = [
     'ATTRVALUE2STRING',
     'ATTRVALUE2CLOSE',
 
-    # escaped
-
 ]
+
+# Regulare expressions
+
+re_digit       = r'([0-9])'
+re_nondigit    = r'([_A-Za-z])'
+re_identifier  = r'(' + re_nondigit + r'(' + re_digit + r'|' + re_nondigit + r')*)'
+
+class SyntaxError(Exception):
+    pass
+
 
 
 class XmlLexer:
     # The XML Tokenizer
 
-    # ########
     # states:
     #
     #   default:
@@ -87,29 +85,24 @@ class XmlLexer:
     #     A document tag
     #   string:
     #     Within quote-delimited strings inside tags
-    #   escaped:
-    #     A single-use state that treats the next character literally.
 
     states = (
         ('tag', 'exclusive'),
         ('attrvalue1', 'exclusive'),
         ('attrvalue2', 'exclusive'),
-        ('escaped', 'exclusive'),
     )
 
     tokens = tokens
 
 
-    # ########
     # ANY
 
     def t_ANY_error(self, t):
-        raise yacc.GrammarError("Illegal character '%s'" % t.value[0])
+        raise SyntaxError("Illegal character '%s'" % t.value[0])
         t.lexer.skip(1)
         pass
 
 
-    # ########
     # INITIAL
 
     t_ignore  = ' \t'
@@ -129,7 +122,6 @@ class XmlLexer:
         return t
 
 
-    # ########
     # tag
 
     t_tag_ignore  = ' \t'
@@ -149,7 +141,6 @@ class XmlLexer:
         return t
 
 
-    # ########
     # attr
 
     t_tag_ATTRASSIGN    = r'='
@@ -165,7 +156,6 @@ class XmlLexer:
         return t
 
 
-    # ########
     # attrvalue1
 
     def t_attrvalue1_ATTRVALUE1STRING(self, t):
@@ -181,7 +171,6 @@ class XmlLexer:
     t_attrvalue1_ignore  = ''
 
 
-    # ########
     # attrvalue2
 
     def t_attrvalue2_ATTRVALUE2STRING(self, t):
@@ -197,13 +186,6 @@ class XmlLexer:
     t_attrvalue2_ignore  = ''
 
 
-    # ########
-    # escaped
-
-    t_escaped_ignore  = ''
-
-
-    # ########
     # misc
 
     literals = '$%^'
@@ -234,32 +216,6 @@ class XmlLexer:
 
 
 # ########
-# DOM
-
-class Element:
-    # Document object model
-    #
-    # Parser returns the root Element of the XML document
-
-    def __init__(self, name, attributes={}, children=[]):
-        self.name = name
-        self.attributes = attributes
-        self.children = children
-
-    def __str__(self):
-        attributes_str = ''
-        for attr in self.attributes:
-            attributes_str += ' %s="%s"' % (attr, _xml_escape(self.attributes[attr]))
-
-        children_str = ''
-        for node in self.children:
-            children_str += '\n    ' + str(node)
-        if children_str: children_str += '\n'
-
-        return '<%s%s>%s</%s>'% (self.name, attributes_str, children_str, self.name)
-
-
-# ########
 # Escape
 
 _xml_escape_table = {
@@ -287,15 +243,24 @@ def _xml_unescape(s):
 
 
 # ########
-# Parser
+# PARSER
 
 tag_stack = []
+
+# Customization
 
 def parser_trace(x):
     _debug_print_('PARSER', '[%16s] %s' % (sys._getframe(1).f_code.co_name, x))
 
+def yacc_production_str(p):
+    #return "YaccProduction(%s, %s)" % (str(p.slice), str(p.stack))
+    return "YaccP%s" % (str([i.value for i in p.slice]))
 
-# ########
+yacc.YaccProduction.__str__ = yacc_production_str
+
+class ParserError(Exception):
+    pass
+
 # Grammer
 
 def p_root(p):
@@ -305,37 +270,50 @@ def p_root(p):
     p[0] = p[1]
 
 def p_element(p):
-    'element : opentag children closetag'
+    '''
+    element : opentag children closetag
+    element : lonetag
+    '''
     parser_trace(p)
 
-    p[1].children = p[2]
+    if len(p) == 4:
+        p[1].children = p[2]
+
     p[0] = p[1]
+
+# tag
 
 def p_opentag(p):
     'opentag : OPENTAGOPEN TAGATTRNAME attributes TAGCLOSE'
     parser_trace(p)
 
+    tag_stack.append(p[2])
     p[0] = Element(p[2], p[3])
 
 def p_closetag(p):
     'closetag : CLOSETAGOPEN TAGATTRNAME TAGCLOSE'
     parser_trace(p)
 
-    """
     n = tag_stack.pop()
     if p[2] != n:
-        raise yacc.GrammarError("Close tag name (%s) does not match the corresponding open tag (%s)."
-                % (p[2], n))
-    """
+        raise ParserError('Close tag name ("%s") does not match the corresponding open tag ("%s").' % (p[2], n))
+
+def p_lonetag(p):
+    'lonetag : OPENTAGOPEN TAGATTRNAME attributes LONETAGCLOSE'
+    parser_trace(p)
+
+    p[0] = Element(p[2], p[3])
+
+# attr
 
 def p_attributes(p):
     '''
     attributes : attribute attributes
-               | empty
+    attributes : nothing
     '''
     parser_trace(p)
 
-    if len(p) > 2:
+    if len(p) == 3:
         if p[2]:
             p[1].update(p[2])
             p[0] = p[1]
@@ -359,10 +337,12 @@ def p_attrvalue(p):
 
     p[0] = _xml_unescape(p[2])
 
+# child
+
 def p_children(p):
     '''
     children : child children
-             | empty
+    children : nothing
     '''
     parser_trace(p)
 
@@ -374,29 +354,54 @@ def p_children(p):
     else:
         p[0] = []
 
-
 def p_child(p):
     'child : element'
     parser_trace(p)
     p[0] = p[1]
 
+# nothing
 
-
-# ########
-# General
-
-def p_empty(p):
-    'empty :'
+def p_nothing(p):
+    'nothing :'
     pass
 
 # Error rule for syntax errors
 def p_error(p):
-    raise yacc.GrammarError("Parse error: %s", (p,))
+    raise ParserError("Parse error: %s", (p,))
     pass
 
 
+# ########
+# DOM
 
-# Main
+class Element:
+    # Document object model
+    #
+    # Parser returns the root Element of the XML document
+
+    def __init__(self, name, attributes={}, children=[]):
+        self.name = name
+        self.attributes = attributes
+        self.children = children
+
+    def __str__(self):
+        attributes_str = ''
+        for attr in self.attributes:
+            attributes_str += ' %s="%s"' % (attr, _xml_escape(self.attributes[attr]))
+
+        children_str = ''
+        for node in self.children:
+            children_str += '\n    ' + str(node)
+        if children_str: children_str += '\n'
+
+        return '<%s%s>%s</%s>'% (self.name, attributes_str, children_str, self.name)
+
+    def __repr__(self):
+        return str(self)
+
+# ########
+# MAIN
+
 def main():
 
     # Read data
@@ -421,16 +426,6 @@ def main():
     _debug_header('OUTPUT')
     _debug_print_('OUTPUT', result)
     _debug_footer('OUTPUT')
-
-
-# Customization
-
-def yacc_production_str(p):
-    #return "YaccProduction(%s, %s)" % (str(p.slice), str(p.stack))
-    return "YaccP%s" % (str([i.value for i in p.slice]))
-
-yacc.YaccProduction.__str__ = yacc_production_str
-
 
 if __name__ == '__main__':
     main()
