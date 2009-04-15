@@ -7,84 +7,48 @@ from ply import lex, yacc
 
 
 
-# #######
-# Debug
-#
-
-DEBUG = {
-    'INPUT': False,
-    'TOKENS': False,
-    'PARSER': False,
-    'OUTPUT': False,
-}
-
-def _debug_header(part):
-    if DEBUG[part]:
-        print '--------'
-        print '%s:' % part
-
-def _debug_footer(part):
-    if DEBUG[part]:
-        pass
-
-def _debug_print_(part, s):
-    if DEBUG[part]:
-        print s
-
-
-# ########
-# TOKENS
+################################
+# LEXER
 
 tokens = [
 
-    # INITIAL
+    # state: INITIAL
     'CDATA',
-
     'OPENTAGOPEN',
     'CLOSETAGOPEN',
 
-    # tag
+    # state: tag
     'TAGATTRNAME',
-
     'TAGCLOSE',
     'LONETAGCLOSE',
-
     'ATTRASSIGN',
 
-    # attrvalue1
+    # state: attrvalue1
     'ATTRVALUE1OPEN',
     'ATTRVALUE1STRING',
     'ATTRVALUE1CLOSE',
 
-    # attrvalue2
+    # state: attrvalue2
     'ATTRVALUE2OPEN',
     'ATTRVALUE2STRING',
     'ATTRVALUE2CLOSE',
 
 ]
 
-# Regulare expressions
-
+# Non-trivial regex's
 re_digit       = r'([0-9])'
 re_nondigit    = r'([_A-Za-z])'
 re_identifier  = r'(' + re_nondigit + r'(' + re_digit + r'|' + re_nondigit + r')*)'
-
-class SyntaxError(Exception):
-    pass
-
 
 
 class XmlLexer:
     # The XML Tokenizer
 
     # states:
-    #
-    #   default:
-    #     The default context, non-tag texts
-    #   tag:
-    #     A document tag
-    #   string:
-    #     Within quote-delimited strings inside tags
+    #   default:    The default context, non-tag
+    #   tag:        The document tag context
+    #   attrvalue1: Single-quoted tag attribute value
+    #   attrvalue2: Double-quoted tag attribute value
 
     states = (
         ('tag', 'exclusive'),
@@ -203,63 +167,25 @@ class XmlLexer:
     def test(self, data):
         self.lexer.input(data)
 
-        _debug_header('TOKENS')
+        _debug_header('LEXER')
 
         while 1:
             tok = self.lexer.token()
             if not tok: break
-            _debug_print_('TOKENS', '[%-12s] %s' % (self.lexer.lexstate, tok))
+            _debug_print_('LEXER', '[%-12s] %s' % (self.lexer.lexstate, tok))
 
-        _debug_footer('TOKENS')
-
-    # XmlLexer ends
+        _debug_footer('LEXER')
 
 
-# ########
-# Escape
-
-_xml_escape_table = {
-    "&": "&amp;",
-    '"': "&quot;",
-    "'": "&apos;",
-    ">": "&gt;",
-    "<": "&lt;",
-    }
-
-def _xml_escape(text):
-    L=[]
-    for c in text:
-        L.append(_xml_escape_table.get(c,c))
-    return "".join(L)
-
-def _xml_unescape(s):
-    rules = _xml_escape_table.items()
-    rules.reverse()
-
-    for x, y in rules:
-        s = s.replace(y, x)
-
-    return s
+# Customization
+class SyntaxError(Exception):
+    pass
 
 
-# ########
+################################
 # PARSER
 
 tag_stack = []
-
-# Customization
-
-def parser_trace(x):
-    _debug_print_('PARSER', '[%-16s] %s' % (sys._getframe(1).f_code.co_name, x))
-
-def yacc_production_str(p):
-    #return "YaccProduction(%s, %s)" % (str(p.slice), str(p.stack))
-    return "YaccP%s" % (str([i.value for i in p.slice]))
-
-yacc.YaccProduction.__str__ = yacc_production_str
-
-class ParserError(Exception):
-    pass
 
 # Grammer
 
@@ -383,8 +309,21 @@ def p_error(p):
     raise ParserError("Parse error: %s" % (p,))
     pass
 
+# Customization
+def parser_trace(x):
+    _debug_print_('PARSER', '[%-16s] %s' % (sys._getframe(1).f_code.co_name, x))
 
-# ########
+def yacc_production_str(p):
+    #return "YaccProduction(%s, %s)" % (str(p.slice), str(p.stack))
+    return "YaccP%s" % (str([i.value for i in p.slice]))
+
+yacc.YaccProduction.__str__ = yacc_production_str
+
+class ParserError(Exception):
+    pass
+
+
+################################
 # DOM
 
 class DOM:
@@ -418,8 +357,36 @@ class DOM:
     class Text(UserString):
         pass
 
-# ########
-# MAIN
+
+################################
+# ESCAPE
+
+_xml_escape_table = {
+    "&": "&amp;",
+    '"': "&quot;",
+    "'": "&apos;",
+    ">": "&gt;",
+    "<": "&lt;",
+    }
+
+def _xml_escape(text):
+    L=[]
+    for c in text:
+        L.append(_xml_escape_table.get(c,c))
+    return "".join(L)
+
+def _xml_unescape(s):
+    rules = _xml_escape_table.items()
+    rules.reverse()
+
+    for x, y in rules:
+        s = s.replace(y, x)
+
+    return s
+
+
+################################
+# Methods
 
 def parse(data):
 
@@ -471,12 +438,38 @@ def tree(node, level=0, prefix=''):
 
     return s_node + s_children
 
-def main():
 
+################################
+# Debug
+
+DEBUG = {
+    'INPUT': False,
+    'LEXER': False,
+    'PARSER': False,
+    'OUTPUT': False,
+}
+
+def _debug_header(part):
+    if DEBUG[part]:
+        print '--------'
+        print '%s:' % part
+
+def _debug_footer(part):
+    if DEBUG[part]:
+        pass
+
+def _debug_print_(part, s):
+    if DEBUG[part]:
+        print s
+
+
+################################
+# MAIN
+
+def main():
     data = open(sys.argv[1]).read()
     root = parse(data)
     print tree(root)
-
 
 if __name__ == '__main__':
     main()
