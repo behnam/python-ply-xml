@@ -2,89 +2,217 @@
 \usepackage{latexsym,amsmath,url,graphicx}
 \usepackage{listings}
 \usepackage{color}
+\usepackage{url}
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \definecolor{dark-gray}{gray}{0.25}
+\definecolor{light-gray}{gray}{0.96}
 
-
-\bibliographystyle{unsrt}
-\topmargin=0in
-\oddsidemargin=0in
-\textheight=9in
+\bibliographystyle{unsrt} \topmargin=0in \oddsidemargin=0in \textheight=9in
 \textwidth=6in
 
 \newcommand{\problem}[1]{\section*{Problem #1}}
-\newcommand{\subproblem}[1]{\subsection*{#1}}
-\newcommand{\qed}{\hfill$\Box$}
-\newtheorem{definition}{Definition}
-\newtheorem{lemma}{Lemma}
+\newcommand{\subproblem}[1]{\subsection*{#1}} \newcommand{\qed}{\hfill$\Box$}
+\newtheorem{definition}{Definition} \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
 \newenvironment{proof}{\par\bigskip\noindent\textbf{\textit{Proof.\space}}\itshape}{\qed\par\bigskip}
 
 \lstset{			%
-language=Python,		% choose the language of the code
-tabsize=2,			% sets default tabsize to 2 spaces
-frame=single,			% adds a frame around the code
-				%
-breaklines=true,		% sets automatic line breaking
-breakatwhitespace=false,	% sets if automatic breaks should only happen at whitespace
-				%
-numbers=left,			% where to put the line-numbers
-numberstyle=\footnotesize,	% the size of the fonts that are used for the line-numbers
-stepnumber=5,			% the step between two line-numbers. If it's 1 each line will be numbered
-numbersep=5pt,			% how far the line-numbers are from the code
-numberstyle=\tiny,		% numbers size
-				%
-basicstyle=\footnotesize,	% the size of the fonts that are used for the code
-stringstyle=\ttfamily,		% typewriter type for strings
-%keywordstyle=\color{black}\bfseries\underbar,
-identifierstyle=,		% nothing happens
-commentstyle=\color{dark-gray}\bfseries\itshape,
-				% white comments
-%showspaces=false,		% show spaces adding particular underscores
-showstringspaces=false		% no special string spaces
-%showtabs=false,		% show tabs within strings adding particular underscores
-				% underlined bold black keywords
-				%
-%captionpos=b,			% sets the caption-position to bottom
-%escapeinside={\%*}{*)}		% if you want to add a comment within your code
-%backgroundcolor=\color{white},	% choose the background color. You must add \usepackage{color}
+  language=Python,		% choose the language of the code
+  tabsize=2,			% sets default tabsize to 2 spaces
+  frame=single,			% adds a frame around the code
+				  %
+  breaklines=true,		% sets automatic line breaking
+  breakatwhitespace=false,	% sets if automatic breaks should only happen at whitespace
+				  %
+  numbers=left,			% where to put the line-numbers
+  numberstyle=\footnotesize,	% the size of the fonts that are used for the line-numbers
+  stepnumber=5,			% the step between two line-numbers. If it's 1 each line will be numbered
+  numbersep=5pt,			% how far the line-numbers are from the code
+  numberstyle=\tiny,		% numbers size
+				  %
+  basicstyle=\footnotesize,	% the size of the fonts that are used for the code
+  stringstyle=\ttfamily,		% typewriter type for strings
+  %keywordstyle=\color{black}\bfseries\underbar,		%
+  identifierstyle=,		% nothing happens
+  commentstyle=\color{dark-gray}\bfseries\itshape,	%
+				  % white comments
+  %showspaces=false,		% show spaces adding particular underscores
+  showstringspaces=false,		% no special string spaces
+  %showtabs=false,		% show tabs within strings adding particular underscores underlined bold black keywords
+				  %
+  %captionpos=b,			% sets the caption-position to bottom
+  %escapeinside={\%*}{*)},	% if you want to add a comment within your code
+  backgroundcolor=\color{light-gray},	% choose the background color. You %must add \usepackage{color}
 }
 
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \begin{document}
-\title{Semantic Web --- Spring 2009\\Homework \#1\\~\\\huge{Simple XML Parser using Python Lex/Yacc}}
-\author{Behnam Esfahbod\\behnam@sharif.edu}
+
+\title{%
+  Semantic Web --- Spring 2009\\%
+  Homework \#1\\%
+  ~\\%
+  \huge{Simple XML Parser using Python Lex-Yacc}%
+}
+
+\author{
+  Behnam Esfahbod\\%
+  behnam@sharif.edu%
+}
+
 \date{\today}
+
 \maketitle
 
 
 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+This project consists of an XML parser, \emph{xml-ply}, written in Python
+using \emph{python~Lex-Yacc} library, a simple document object model (DOM),
+and a tree-like view to the document.
+
+Python Lex-Yacc (PLY) \cite{PLY} is a pure-Python implementation of the
+popular compiler construction tools \emph{lex} and \emph{yacc}, with the goal
+to stay fairly faithful to the way in which traditional lex/yacc tools work.
+PLY consists of two separate modules; {\tt lex.py} and {\tt yacc.py}, both of
+which are found in a Python package called {\tt ply}.
+
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Lexer}
 
-%\problem{3}
+The {\tt lex.py} module is used to break input text into a collection of
+tokens specified by a collection of regular expression rules. Each token is
+specified by writing a regular expression rule. Each of these rules are are
+defined by making function declarations with a special prefix {\tt t\_} to
+indicate that it defines a token. For simple tokens, the regular expression
+can be specified as strings. (Python raw strings are used since they are the
+most convenient way to write regular expression strings)
 
+The lexer has four \emph{states}. The default state, {\tt INITIAL}, is used
+for all the text outside the XML tags.  The {\tt tag} state is used for the
+tag opening and closing, the tag name, and the attributes names and
+assignments. The {\tt attrvalue1} and {\tt attrvalue2} states are used for
+single-quoted and double-quoted strings of attribute values respectively.
+
+For now, we assume that the XML file doesn't contain XML special tags, DTD
+tags, nor comments.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Parser}
+
+The {\tt yacc.py} module is used to recognize language syntax that has been
+specified in the form of a context free grammar.  {\tt yacc.py} uses LR
+parsing and generates its parsing tables using either the \emph{LALR(1)} or
+\emph{SLR} table generation algorithms. Here we use SLR table generation
+algorithm.
+
+Each grammar rule is defined by a Python function where the doc-string to that
+function contains the appropriate context-free grammar specification.  Each
+function accepts a single argument p that is a sequence containing the values
+of each grammar symbol in the corresponding rule.
+
+The non-terminal tokens in the grammar are:
+\begin{description}
+  \item[root] The root element of the XML document
+  \item[element] The document nodes
+  \item[opentag] An opening tag of a node
+  \item[closetag] A closing tag of a node
+  \item[lonetag] A tag which doesn't have any child and ends right in the
+  opening tag
+  \item[attributes] The sequence of attributes of a tag
+  \item[attribute] The pair of attribute name and value
+  \item[attrvalue] Value of an attribute
+  \item[children] The sequence of children of the tag
+  \item[child] A CDATA or Element node
+\end{description}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Document Object Model}
+
+The document object model (DOM) has two models, {\tt Element} and {\tt Cdata}.
+
+The {\tt Element} model represents a node and contains the node name,
+the dictionary of attribute name-values, and the list of child nodes.
+
+The {\tt Cdata} model represents the CDATA nodes of the document, which only
+contains the text.
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Source Code}
+
+\lstinputlisting[
+  caption=The parser (parser.py),
+  label=lst:parser.py
+]{../parser.py}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Generated Grammar}
+
+\lstinputlisting[
+  caption=The generated grammar (parser.out),
+  label=lst:parser.out
+]{../parser.out}
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Examples}
+
+\subsection{Example 1}
+
+\lstinputlisting[
+  caption=Sample input 1 (sample-1.xml),
+  label=lst:sample-1.xml
+]{../samples/sample-1.xml}
+
+\lstinputlisting[
+  caption=Output 1 (sample-1.out),
+  label=lst:sample-1.out
+]{../samples/sample-1.out}
+
+
+\subsection{Example 2}
+
+\lstinputlisting[
+  caption=Sample input 2 (sample-2.xml),
+  label=lst:sample-2.xml
+]{../samples/sample-2.xml}
+
+\lstinputlisting[
+  caption=Output 2 (sample-2.out),
+  label=lst:sample-2.out
+]{../samples/sample-2.out}
+
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Temp
 
 % %%%%%%%%%%%%%%%%%%%%%%%%
 
-%\subproblem{(3a)}
+%\subsection{(3a)}
 
-\lstinputlisting[caption=The Python program, label=lst:parser.py]{../parser.py}
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{thebibliography}{}
 
-%\bibliography{comp}
+\bibitem{PLY} PLY (Python Lex-Yacc) \url{http://www.dabeaz.com/ply/}
+
+%\bibitem{XYZ} P. Hore, L.O. Hall, D.B. Goldgof, W. Cheng, {\em Online Fuzzy C
+%Means}, Fuzzy Information Processing Society, NAFIPS 2008.
+
+\end{thebibliography}{}
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \end{document}
-
-% vim:set sw=2:
