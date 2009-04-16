@@ -1,15 +1,27 @@
-recipe:
-    title: Basic bread
-    ingredient: Flour
-    ingredient: Yeast
-    ingredient: Water
-    ingredient: Salt
-    instructions:
-        step: Mix all ingredients together.
-        step: Knead thoroughly.
-        step: Cover with a cloth, and leave for one hour in warm room.
-        step: Knead again.
-        step: Place in a bread baking tin.
-        step: Cover with a cloth, and leave for one hour in warm room.
-        step: Bake in the oven at 180(degrees)C for 30 minutes.
+recipe:	
+    @cook_time:	3 hours
+    @name:	bread
+    @prep_time:	5 mins
+    title:	Basic bread
+    ingredient:	Flour
+        @amount:	8
+        @unit:	dL
+    ingredient:	Yeast
+        @amount:	10
+        @unit:	grams
+    ingredient:	Water
+        @amount:	4
+        @state:	warm
+        @unit:	dL
+    ingredient:	Salt
+        @amount:	1
+        @unit:	teaspoon
+    instructions:	
+        step:	Mix all ingredients together.
+        step:	Knead thoroughly.
+        step:	Cover with a cloth, and leave for one hour in warm room.
+        step:	Knead again.
+        step:	Place in a bread baking tin.
+        step:	Cover with a cloth, and leave for one hour in warm room.
+        step:	Bake in the oven at 180(degrees)C for 30 minutes.
 

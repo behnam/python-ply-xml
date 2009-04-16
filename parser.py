@@ -6,43 +6,12 @@ from UserString import UserString
 from ply import lex, yacc
 
 
-
 ################################
 # LEXER
 
-tokens = [
-
-    # state: INITIAL
-    'CDATA',
-    'OPENTAGOPEN',
-    'CLOSETAGOPEN',
-
-    # state: tag
-    'TAGATTRNAME',
-    'TAGCLOSE',
-    'LONETAGCLOSE',
-    'ATTRASSIGN',
-
-    # state: attrvalue1
-    'ATTRVALUE1OPEN',
-    'ATTRVALUE1STRING',
-    'ATTRVALUE1CLOSE',
-
-    # state: attrvalue2
-    'ATTRVALUE2OPEN',
-    'ATTRVALUE2STRING',
-    'ATTRVALUE2CLOSE',
-
-]
-
-# Non-trivial regex's
-re_digit       = r'([0-9])'
-re_nondigit    = r'([_A-Za-z])'
-re_identifier  = r'(' + re_nondigit + r'(' + re_digit + r'|' + re_nondigit + r')*)'
-
 
 class XmlLexer:
-    # The XML Tokenizer
+    '''The XML lexer'''
 
     # states:
     #   default:    The default context, non-tag
@@ -56,7 +25,36 @@ class XmlLexer:
         ('attrvalue2', 'exclusive'),
     )
 
-    tokens = tokens
+    tokens = [
+
+        # state: INITIAL
+        'CDATA',
+        'OPENTAGOPEN',
+        'CLOSETAGOPEN',
+
+        # state: tag
+        'TAGATTRNAME',
+        'TAGCLOSE',
+        'LONETAGCLOSE',
+        'ATTRASSIGN',
+
+        # state: attrvalue1
+        'ATTRVALUE1OPEN',
+        'ATTRVALUE1STRING',
+        'ATTRVALUE1CLOSE',
+
+        # state: attrvalue2
+        'ATTRVALUE2OPEN',
+        'ATTRVALUE2STRING',
+        'ATTRVALUE2CLOSE',
+
+    ]
+
+
+    # Complex patterns
+    re_digit       = r'([0-9])'
+    re_nondigit    = r'([_A-Za-z])'
+    re_identifier  = r'(' + re_nondigit + r'(' + re_digit + r'|' + re_nondigit + r')*)'
 
 
     # ANY
@@ -167,14 +165,10 @@ class XmlLexer:
     def test(self, data):
         self.lexer.input(data)
 
-        _debug_header('LEXER')
-
         while 1:
             tok = self.lexer.token()
             if not tok: break
             _debug_print_('LEXER', '[%-12s] %s' % (self.lexer.lexstate, tok))
-
-        _debug_footer('LEXER')
 
 
 # Customization
@@ -193,7 +187,7 @@ def p_root_element(p):
     '''root : element
             | element CDATA
     '''
-    parser_trace(p)
+    _parser_trace(p)
 
     p[0] = p[1]
 
@@ -201,7 +195,7 @@ def p_root_cdata_element(p):
     '''root : CDATA element
             | CDATA element CDATA
     '''
-    parser_trace(p)
+    _parser_trace(p)
 
     p[0] = p[2]
 
@@ -209,7 +203,7 @@ def p_element(p):
     '''element : opentag children closetag
                | lonetag
     '''
-    parser_trace(p)
+    _parser_trace(p)
 
     if len(p) == 4:
         p[1].children = p[2]
@@ -220,7 +214,7 @@ def p_element(p):
 def p_opentag(p):
     '''opentag : OPENTAGOPEN TAGATTRNAME attributes TAGCLOSE
     '''
-    parser_trace(p)
+    _parser_trace(p)
 
     tag_stack.append(p[2])
     p[0] = DOM.Element(p[2], p[3])
@@ -228,7 +222,7 @@ def p_opentag(p):
 def p_closetag(p):
     '''closetag : CLOSETAGOPEN TAGATTRNAME TAGCLOSE
     '''
-    parser_trace(p)
+    _parser_trace(p)
 
     n = tag_stack.pop()
     if p[2] != n:
@@ -237,7 +231,7 @@ def p_closetag(p):
 def p_lonetag(p):
     '''lonetag : OPENTAGOPEN TAGATTRNAME attributes LONETAGCLOSE
     '''
-    parser_trace(p)
+    _parser_trace(p)
 
     p[0] = DOM.Element(p[2], p[3])
 
@@ -246,7 +240,7 @@ def p_attributes(p):
     '''attributes : attribute attributes
                   | empty
     '''
-    parser_trace(p)
+    _parser_trace(p)
 
     if len(p) == 3:
         if p[2]:
@@ -260,7 +254,7 @@ def p_attributes(p):
 def p_attribute(p):
     '''attribute : TAGATTRNAME ATTRASSIGN attrvalue
     '''
-    parser_trace(p)
+    _parser_trace(p)
 
     p[0] = {p[1]: p[3]}
 
@@ -268,7 +262,7 @@ def p_attrvalue(p):
     '''attrvalue : ATTRVALUE1OPEN ATTRVALUE1STRING ATTRVALUE1CLOSE
                  | ATTRVALUE2OPEN ATTRVALUE2STRING ATTRVALUE2CLOSE
     '''
-    parser_trace(p)
+    _parser_trace(p)
 
     p[0] = _xml_unescape(p[2])
 
@@ -277,7 +271,7 @@ def p_children(p):
     '''children : child children
                 | empty
     '''
-    parser_trace(p)
+    _parser_trace(p)
 
     if len(p) > 2:
         if p[2]:
@@ -289,15 +283,15 @@ def p_children(p):
 
 def p_child_element(p):
     '''child : element'''
-    parser_trace(p)
+    _parser_trace(p)
 
     p[0] = p[1]
 
 def p_child_cdata(p):
     '''child : CDATA'''
-    parser_trace(p)
+    _parser_trace(p)
 
-    p[0] = DOM.Text(p[1])
+    p[0] = DOM.Cdata(p[1])
 
 # empty
 def p_empty(p):
@@ -305,22 +299,21 @@ def p_empty(p):
     pass
 
 # Error rule for syntax errors
+class ParserError(Exception):
+    pass
+
 def p_error(p):
     raise ParserError("Parse error: %s" % (p,))
     pass
 
 # Customization
-def parser_trace(x):
+def _parser_trace(x):
     _debug_print_('PARSER', '[%-16s] %s' % (sys._getframe(1).f_code.co_name, x))
 
-def yacc_production_str(p):
+def _yacc_production__str(p):
     #return "YaccProduction(%s, %s)" % (str(p.slice), str(p.stack))
     return "YaccP%s" % (str([i.value for i in p.slice]))
-
-yacc.YaccProduction.__str__ = yacc_production_str
-
-class ParserError(Exception):
-    pass
+yacc.YaccProduction.__str__ = _yacc_production__str
 
 
 ################################
@@ -354,7 +347,7 @@ class DOM:
         def __repr__(self):
             return str(self)
 
-    class Text(UserString):
+    class Cdata(UserString):
         pass
 
 
@@ -386,9 +379,9 @@ def _xml_unescape(s):
 
 
 ################################
-# Methods
+# INTERFACE
 
-def parse(data):
+def xml_parse(data):
 
     _debug_header('INPUT')
     _debug_print_('INPUT', data)
@@ -398,13 +391,18 @@ def parse(data):
     xml_lexer = XmlLexer()
     xml_lexer.build()
 
+    _debug_header('LEXER')
     xml_lexer.test(data)
+    _debug_footer('LEXER')
 
     # Parser
+    global tokens
+    tokens = XmlLexer.tokens
+
     yacc.yacc(method="SLR")
 
     _debug_header('PARSER')
-    root = yacc.parse(data)
+    root = yacc.parse(data, lexer=xml_lexer.lexer, debug=False)
     _debug_footer('PARSER')
 
     _debug_header('OUTPUT')
@@ -414,35 +412,38 @@ def parse(data):
     return root
 
 
-def tree(node, level=0, prefix=''):
+def tree(node, level=0, init_prefix=''):
     'Returns a tree view of the XML data'
 
-    s_node = prefix + node.name + ':'
+    prefix = '    '
+    attr_prefix = '@'
+    tag_postfix = ':\t'
+    attr_postfix = ':\t'
 
+    s_node = init_prefix + node.name + tag_postfix
+    s_attributes = ''
     s_children = ''
 
-    children = node.children
-    children.reverse()
+    for attr in node.attributes:
+        s_attributes += init_prefix + prefix + attr_prefix + attr + attr_postfix + node.attributes[attr] + '\n'
 
-    if len(children) == 1 and not 'name' in children[0].__dict__:
-        s_node += ' %s' % node.children[0] + '\n'
+    if len(node.children) == 1 and not isinstance(node.children[0], DOM.Element):
+        s_node += node.children[0] + '\n'
 
     else:
-        first = True
-        for i in xrange(len(children)):
-            if 'name' in node.children[i].__dict__:
-                p = '    '
-                s_children = tree(node.children[i], level+1, prefix+p) + s_children
+        for child in node.children:
+            if isinstance(child, DOM.Element):
+                s_children += tree(child, level+1, init_prefix + prefix)
 
         s_node += '\n'
 
-    return s_node + s_children
+    return s_node + s_attributes + s_children
 
 
 ################################
-# Debug
+# DEBUG
 
-DEBUG = {
+_DEBUG = {
     'INPUT': False,
     'LEXER': False,
     'PARSER': False,
@@ -450,16 +451,16 @@ DEBUG = {
 }
 
 def _debug_header(part):
-    if DEBUG[part]:
+    if _DEBUG[part]:
         print '--------'
         print '%s:' % part
 
 def _debug_footer(part):
-    if DEBUG[part]:
+    if _DEBUG[part]:
         pass
 
 def _debug_print_(part, s):
-    if DEBUG[part]:
+    if _DEBUG[part]:
         print s
 
 
@@ -468,7 +469,7 @@ def _debug_print_(part, s):
 
 def main():
     data = open(sys.argv[1]).read()
-    root = parse(data)
+    root = xml_parse(data)
     print tree(root)
 
 if __name__ == '__main__':
