@@ -1,0 +1,26 @@
+Products:
+    Product:
+        Name: gizmo
+        Price: 22.99
+        Description: great
+        Store:
+            Name: wiz
+            Phone: 555-1234
+            Markup: 25
+        Store:
+            Name: Econo-Wiz
+            Phone: 555-6543
+            Markup: 15
+    Product:
+        Name: gizmoPlus
+        Price: 99.99
+        Description: more features
+        Store:
+            Name: wiz
+            Phone: 555-1234
+            Markup: 10
+    Product:
+        Name: gadget
+        Price: 59.99
+        Description: good value
+

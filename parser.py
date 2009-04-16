@@ -244,7 +244,7 @@ def p_lonetag(p):
 # attr
 def p_attributes(p):
     '''attributes : attribute attributes
-                  | nothing
+                  | empty
     '''
     parser_trace(p)
 
@@ -275,7 +275,7 @@ def p_attrvalue(p):
 # child
 def p_children(p):
     '''children : child children
-                | nothing
+                | empty
     '''
     parser_trace(p)
 
@@ -299,9 +299,9 @@ def p_child_cdata(p):
 
     p[0] = DOM.Text(p[1])
 
-# nothing
-def p_nothing(p):
-    '''nothing :'''
+# empty
+def p_empty(p):
+    '''empty :'''
     pass
 
 # Error rule for syntax errors
