@@ -6,6 +6,9 @@ from UserString import UserString
 from ply import lex, yacc
 
 
+_VERSION = '1.0'
+
+
 ################################
 # LEXER
 
