@@ -31,7 +31,7 @@ class XmlLexer:
     tokens = [
 
         # state: INITIAL
-        'CDATA',
+        'PCDATA',
         'OPENTAGOPEN',
         'CLOSETAGOPEN',
 
@@ -82,7 +82,7 @@ class XmlLexer:
         t.lexer.push_state('tag')
         return t
 
-    def t_CDATA(self, t):
+    def t_PCDATA(self, t):
         '[^<]+'
         return t
 
@@ -188,15 +188,15 @@ tag_stack = []
 
 def p_root_element(p):
     '''root : element
-            | element CDATA
+            | element PCDATA
     '''
     _parser_trace(p)
 
     p[0] = p[1]
 
-def p_root_cdata_element(p):
-    '''root : CDATA element
-            | CDATA element CDATA
+def p_root_pcdata_element(p):
+    '''root : PCDATA element
+            | PCDATA element PCDATA
     '''
     _parser_trace(p)
 
@@ -290,11 +290,11 @@ def p_child_element(p):
 
     p[0] = p[1]
 
-def p_child_cdata(p):
-    '''child : CDATA'''
+def p_child_pcdata(p):
+    '''child : PCDATA'''
     _parser_trace(p)
 
-    p[0] = DOM.Cdata(p[1])
+    p[0] = DOM.Pcdata(p[1])
 
 # empty
 def p_empty(p):
@@ -350,7 +350,7 @@ class DOM:
         def __repr__(self):
             return str(self)
 
-    class Cdata(UserString):
+    class Pcdata(UserString):
         pass
 
 

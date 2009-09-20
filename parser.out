@@ -4,9 +4,9 @@ Grammar
 
 Rule 0     S' -> root
 Rule 1     root -> element
-Rule 2     root -> element CDATA
-Rule 3     root -> CDATA element
-Rule 4     root -> CDATA element CDATA
+Rule 2     root -> element PCDATA
+Rule 3     root -> PCDATA element
+Rule 4     root -> PCDATA element PCDATA
 Rule 5     element -> opentag children closetag
 Rule 6     element -> lonetag
 Rule 7     opentag -> OPENTAGOPEN TAGATTRNAME attributes TAGCLOSE
@@ -20,7 +20,7 @@ Rule 14    attrvalue -> ATTRVALUE2OPEN ATTRVALUE2STRING ATTRVALUE2CLOSE
 Rule 15    children -> child children
 Rule 16    children -> empty
 Rule 17    child -> element
-Rule 18    child -> CDATA
+Rule 18    child -> PCDATA
 Rule 19    empty -> <empty>
 
 Terminals, with rules where they appear
@@ -32,10 +32,10 @@ ATTRVALUE1STRING     : 13
 ATTRVALUE2CLOSE      : 14
 ATTRVALUE2OPEN       : 14
 ATTRVALUE2STRING     : 14
-CDATA                : 2 3 4 4 18
 CLOSETAGOPEN         : 8
 LONETAGCLOSE         : 9
 OPENTAGOPEN          : 7 9
+PCDATA               : 2 3 4 4 18
 TAGATTRNAME          : 7 8 9 12
 TAGCLOSE             : 7 8
 error                : 
@@ -60,19 +60,19 @@ state 0
 
     (0) S' -> . root
     (1) root -> . element
-    (2) root -> . element CDATA
-    (3) root -> . CDATA element
-    (4) root -> . CDATA element CDATA
+    (2) root -> . element PCDATA
+    (3) root -> . PCDATA element
+    (4) root -> . PCDATA element PCDATA
     (5) element -> . opentag children closetag
     (6) element -> . lonetag
     (7) opentag -> . OPENTAGOPEN TAGATTRNAME attributes TAGCLOSE
     (9) lonetag -> . OPENTAGOPEN TAGATTRNAME attributes LONETAGCLOSE
 
-    CDATA           shift and go to state 3
+    PCDATA          shift and go to state 2
     OPENTAGOPEN     shift and go to state 1
 
     lonetag                        shift and go to state 4
-    element                        shift and go to state 2
+    element                        shift and go to state 3
     root                           shift and go to state 5
     opentag                        shift and go to state 6
 
@@ -86,17 +86,8 @@ state 1
 
 state 2
 
-    (1) root -> element .
-    (2) root -> element . CDATA
-
-    $end            reduce using rule 1 (root -> element .)
-    CDATA           shift and go to state 8
-
-
-state 3
-
-    (3) root -> CDATA . element
-    (4) root -> CDATA . element CDATA
+    (3) root -> PCDATA . element
+    (4) root -> PCDATA . element PCDATA
     (5) element -> . opentag children closetag
     (6) element -> . lonetag
     (7) opentag -> . OPENTAGOPEN TAGATTRNAME attributes TAGCLOSE
@@ -105,15 +96,24 @@ state 3
     OPENTAGOPEN     shift and go to state 1
 
     lonetag                        shift and go to state 4
-    element                        shift and go to state 9
+    element                        shift and go to state 8
     opentag                        shift and go to state 6
+
+state 3
+
+    (1) root -> element .
+    (2) root -> element . PCDATA
+
+    $end            reduce using rule 1 (root -> element .)
+    PCDATA          shift and go to state 9
+
 
 state 4
 
     (6) element -> lonetag .
 
     $end            reduce using rule 6 (element -> lonetag .)
-    CDATA           reduce using rule 6 (element -> lonetag .)
+    PCDATA          reduce using rule 6 (element -> lonetag .)
     OPENTAGOPEN     reduce using rule 6 (element -> lonetag .)
     CLOSETAGOPEN    reduce using rule 6 (element -> lonetag .)
 
@@ -130,20 +130,20 @@ state 6
     (15) children -> . child children
     (16) children -> . empty
     (17) child -> . element
-    (18) child -> . CDATA
+    (18) child -> . PCDATA
     (19) empty -> .
     (5) element -> . opentag children closetag
     (6) element -> . lonetag
     (7) opentag -> . OPENTAGOPEN TAGATTRNAME attributes TAGCLOSE
     (9) lonetag -> . OPENTAGOPEN TAGATTRNAME attributes LONETAGCLOSE
 
-    CDATA           shift and go to state 11
+    PCDATA          shift and go to state 10
     TAGCLOSE        reduce using rule 19 (empty -> .)
     LONETAGCLOSE    reduce using rule 19 (empty -> .)
     CLOSETAGOPEN    reduce using rule 19 (empty -> .)
     OPENTAGOPEN     shift and go to state 1
 
-    element                        shift and go to state 10
+    element                        shift and go to state 11
     child                          shift and go to state 12
     lonetag                        shift and go to state 4
     children                       shift and go to state 13
@@ -170,36 +170,36 @@ state 7
 
 state 8
 
-    (2) root -> element CDATA .
+    (3) root -> PCDATA element .
+    (4) root -> PCDATA element . PCDATA
 
-    $end            reduce using rule 2 (root -> element CDATA .)
+    $end            reduce using rule 3 (root -> PCDATA element .)
+    PCDATA          shift and go to state 19
 
 
 state 9
 
-    (3) root -> CDATA element .
-    (4) root -> CDATA element . CDATA
+    (2) root -> element PCDATA .
 
-    $end            reduce using rule 3 (root -> CDATA element .)
-    CDATA           shift and go to state 19
+    $end            reduce using rule 2 (root -> element PCDATA .)
 
 
 state 10
 
-    (17) child -> element .
+    (18) child -> PCDATA .
 
-    CDATA           reduce using rule 17 (child -> element .)
-    OPENTAGOPEN     reduce using rule 17 (child -> element .)
-    CLOSETAGOPEN    reduce using rule 17 (child -> element .)
+    PCDATA          reduce using rule 18 (child -> PCDATA .)
+    OPENTAGOPEN     reduce using rule 18 (child -> PCDATA .)
+    CLOSETAGOPEN    reduce using rule 18 (child -> PCDATA .)
 
 
 state 11
 
-    (18) child -> CDATA .
+    (17) child -> element .
 
-    CDATA           reduce using rule 18 (child -> CDATA .)
-    OPENTAGOPEN     reduce using rule 18 (child -> CDATA .)
-    CLOSETAGOPEN    reduce using rule 18 (child -> CDATA .)
+    PCDATA          reduce using rule 17 (child -> element .)
+    OPENTAGOPEN     reduce using rule 17 (child -> element .)
+    CLOSETAGOPEN    reduce using rule 17 (child -> element .)
 
 
 state 12
@@ -208,20 +208,20 @@ state 12
     (15) children -> . child children
     (16) children -> . empty
     (17) child -> . element
-    (18) child -> . CDATA
+    (18) child -> . PCDATA
     (19) empty -> .
     (5) element -> . opentag children closetag
     (6) element -> . lonetag
     (7) opentag -> . OPENTAGOPEN TAGATTRNAME attributes TAGCLOSE
     (9) lonetag -> . OPENTAGOPEN TAGATTRNAME attributes LONETAGCLOSE
 
-    CDATA           shift and go to state 11
+    PCDATA          shift and go to state 10
     TAGCLOSE        reduce using rule 19 (empty -> .)
     LONETAGCLOSE    reduce using rule 19 (empty -> .)
     CLOSETAGOPEN    reduce using rule 19 (empty -> .)
     OPENTAGOPEN     shift and go to state 1
 
-    element                        shift and go to state 10
+    element                        shift and go to state 11
     child                          shift and go to state 12
     lonetag                        shift and go to state 4
     children                       shift and go to state 20
@@ -287,9 +287,9 @@ state 18
 
 state 19
 
-    (4) root -> CDATA element CDATA .
+    (4) root -> PCDATA element PCDATA .
 
-    $end            reduce using rule 4 (root -> CDATA element CDATA .)
+    $end            reduce using rule 4 (root -> PCDATA element PCDATA .)
 
 
 state 20
@@ -311,7 +311,7 @@ state 22
     (5) element -> opentag children closetag .
 
     $end            reduce using rule 5 (element -> opentag children closetag .)
-    CDATA           reduce using rule 5 (element -> opentag children closetag .)
+    PCDATA          reduce using rule 5 (element -> opentag children closetag .)
     OPENTAGOPEN     reduce using rule 5 (element -> opentag children closetag .)
     CLOSETAGOPEN    reduce using rule 5 (element -> opentag children closetag .)
 
@@ -340,7 +340,7 @@ state 25
     (9) lonetag -> OPENTAGOPEN TAGATTRNAME attributes LONETAGCLOSE .
 
     $end            reduce using rule 9 (lonetag -> OPENTAGOPEN TAGATTRNAME attributes LONETAGCLOSE .)
-    CDATA           reduce using rule 9 (lonetag -> OPENTAGOPEN TAGATTRNAME attributes LONETAGCLOSE .)
+    PCDATA          reduce using rule 9 (lonetag -> OPENTAGOPEN TAGATTRNAME attributes LONETAGCLOSE .)
     OPENTAGOPEN     reduce using rule 9 (lonetag -> OPENTAGOPEN TAGATTRNAME attributes LONETAGCLOSE .)
     CLOSETAGOPEN    reduce using rule 9 (lonetag -> OPENTAGOPEN TAGATTRNAME attributes LONETAGCLOSE .)
 
@@ -349,7 +349,7 @@ state 26
 
     (7) opentag -> OPENTAGOPEN TAGATTRNAME attributes TAGCLOSE .
 
-    CDATA           reduce using rule 7 (opentag -> OPENTAGOPEN TAGATTRNAME attributes TAGCLOSE .)
+    PCDATA          reduce using rule 7 (opentag -> OPENTAGOPEN TAGATTRNAME attributes TAGCLOSE .)
     OPENTAGOPEN     reduce using rule 7 (opentag -> OPENTAGOPEN TAGATTRNAME attributes TAGCLOSE .)
     CLOSETAGOPEN    reduce using rule 7 (opentag -> OPENTAGOPEN TAGATTRNAME attributes TAGCLOSE .)
 
@@ -389,7 +389,7 @@ state 31
     (8) closetag -> CLOSETAGOPEN TAGATTRNAME TAGCLOSE .
 
     $end            reduce using rule 8 (closetag -> CLOSETAGOPEN TAGATTRNAME TAGCLOSE .)
-    CDATA           reduce using rule 8 (closetag -> CLOSETAGOPEN TAGATTRNAME TAGCLOSE .)
+    PCDATA          reduce using rule 8 (closetag -> CLOSETAGOPEN TAGATTRNAME TAGCLOSE .)
     OPENTAGOPEN     reduce using rule 8 (closetag -> CLOSETAGOPEN TAGATTRNAME TAGCLOSE .)
     CLOSETAGOPEN    reduce using rule 8 (closetag -> CLOSETAGOPEN TAGATTRNAME TAGCLOSE .)
 
