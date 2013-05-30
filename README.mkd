@@ -1,0 +1,10 @@
+ply-xml
+=======
+
+XML parser using PLY, the Python Lex-Yacc library
+
+This project consists of an XML parser, xml-ply (written in Python using PLY, the Python Lex-Yacc library), a simple document object model (DOM), and a tree-like view to the document.
+
+Links
+-----
+* [PLY homepage](http://www.dabeaz.com/ply/)
